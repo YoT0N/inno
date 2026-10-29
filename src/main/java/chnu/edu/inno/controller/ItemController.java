@@ -1,14 +1,5 @@
 package chnu.edu.inno.controller;
 
-
-/*
-  @author   george
-  @project   inno
-  @class  ItemController
-  @version  1.0.0 
-  @since 27/09/2026 - 19.09
-*/
-
 import chnu.edu.inno.model.Item;
 import chnu.edu.inno.model.dto.response.ApiResponse;
 import chnu.edu.inno.model.dto.response.BaseMetaData;
@@ -21,9 +12,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.AllArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @AllArgsConstructor
@@ -33,35 +23,35 @@ public class ItemController {
     private final ItemService itemService;
 
     @GetMapping("/{id}")
-    public Item getItemById(@PathVariable String id) {
-        return itemService.getItemById(id);
+    public ResponseEntity<ApiResponse<BaseMetaData, Item>> getItemById(@PathVariable String id) {
+        return toResponse(itemService.getItemByIdAsApiResponse(id));
     }
 
-    @GetMapping()
-    public List<Item> getAllItems() {
-        return itemService.getAllItems();
+    @GetMapping
+    public ResponseEntity<ApiResponse<BaseMetaData, Item>> getAllItems() {
+        return toResponse(itemService.getAllItemsAsApiResponse());
     }
 
     @PostMapping
-    public Item createItem(@RequestBody Item item) {
-        return itemService.createItem(item);
+    public ResponseEntity<ApiResponse<BaseMetaData, Item>> createItem(@RequestBody Item item) {
+        return toResponse(itemService.createItemAsApiResponse(item));
     }
 
     @PutMapping
-    public Item updateItem(@RequestBody Item item) {
-        return itemService.updateItem(item);
+    public ResponseEntity<ApiResponse<BaseMetaData, Item>> updateItem(@RequestBody Item item) {
+        return toResponse(itemService.updateItemAsApiResponse(item));
     }
 
     @DeleteMapping("/{id}")
-    public void deleteItem(@PathVariable String id) {
-        itemService.deleteItemById(id);
+    public ResponseEntity<ApiResponse<BaseMetaData, Void>> deleteItem(@PathVariable String id) {
+        return toResponse(itemService.deleteItemByIdAsApiResponse(id));
     }
 
     //----------------  More ---------------------------
 
     @GetMapping("/response/{id}")
-    public ApiResponse<BaseMetaData, Item> getItemByIdAsApiResponse(@PathVariable String id) {
-        return itemService.getItemByIdAsApiResponse(id);
+    public ResponseEntity<ApiResponse<BaseMetaData, Item>> getItemByIdAsApiResponse(@PathVariable String id) {
+        return toResponse(itemService.getItemByIdAsApiResponse(id));
     }
 
     @GetMapping("/page")
@@ -86,19 +76,25 @@ public class ItemController {
                                     )
                             )
                     }
-            )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid 'page' (negative / not a number) or 'size' (not in 1..100)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "Requested page does not exist")
     })
-    public ApiResponse<PaginationMetaData, Item> getItemsPage(
+    public ResponseEntity<ApiResponse<PaginationMetaData, Item>> getItemsPage(
             @Parameter(description = "Request parameter. Page of paginated result. Cannot be less than zero")
             @RequestParam(name = "page", defaultValue = "0", required = false) Integer page,
-            @Parameter(description = "Request parameter. Size of paginated page result. Cannot be less than zero")
+            @Parameter(description = "Request parameter. Size of paginated page result. Must be between 1 and 100")
             @RequestParam(name = "size", defaultValue = "5", required = false) Integer size
     ) {
-        return itemService.getPage(page, size);
+        return toResponse(itemService.getPage(page, size));
     }
 
-
-
-
-
+    // HTTP-статус відповіді береться з meta.code, тож тіло і статус завжди узгоджені
+    private static <M extends BaseMetaData, D> ResponseEntity<ApiResponse<M, D>> toResponse(ApiResponse<M, D> response) {
+        return ResponseEntity.status(response.getMeta().getCode()).body(response);
+    }
 }

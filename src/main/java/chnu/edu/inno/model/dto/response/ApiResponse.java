@@ -19,10 +19,14 @@ public class ApiResponse<M extends BaseMetaData, D> {
     public ApiResponse(M meta, D data) {
         this.meta = meta;
         this.data = new ArrayList<>();
-        this.data.add(data);
+        // раніше при data == null в списку з'являвся [null]
+        if (data != null) {
+            this.data.add(data);
+        }
     }
 
     public ApiResponse(M meta) {
         this.meta = meta;
+        this.data = new ArrayList<>(); // замість "data": null -> "data": []
     }
 }
